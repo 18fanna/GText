@@ -66,6 +66,10 @@ public class GText : Text, IPointerClickHandler
         }
     }
 
+    public void PrintUrl(string url)
+    {
+        Debug.Log(url);
+    }
     protected override void Awake()
     {
         base.Awake();
@@ -92,13 +96,14 @@ public class GText : Text, IPointerClickHandler
                 }
             }
         }
+        _hrefClickEvent.AddListener(PrintUrl);
     }
     
     protected override void OnPopulateMesh(VertexHelper toFill)
     {
         if (font == null)
             return;
-
+       // text = "[1]2[AA]3";
         ParseText(m_Text);
         
         // We don't care if we the font Texture changes while we are doing our Update.
@@ -109,13 +114,13 @@ public class GText : Text, IPointerClickHandler
         Vector2 extents = rectTransform.rect.size;
 
         var settings = GetGenerationSettings(extents);
-        cachedTextGenerator.Populate(_outputText, settings);
+        cachedTextGenerator.PopulateWithErrors(_outputText, settings, gameObject);
 
         // Apply the offset to the vertices
         IList<UIVertex> verts = cachedTextGenerator.verts;
         float unitsPerPixel = 1 / pixelsPerUnit;
         //Last 4 verts are always a new line... (\n)
-        int vertCount = verts.Count - 4;
+        int vertCount = verts.Count;// - 4;
 
         // We have no verts to process just return (case 1037923)
         if (vertCount <= 0)
@@ -144,12 +149,13 @@ public class GText : Text, IPointerClickHandler
         else
         {
             Vector2 uv = Vector2.zero;
+            
             for (int i = 0; i < vertCount; ++i)
             {
                 EmojiInfo info;
                 int index = i / 4;
                 int tempVertIndex = i & 3;
-
+               
                 if (_emojis.TryGetValue(index, out info))
                 {
                     _tempVerts[tempVertIndex] = verts[i];
@@ -208,11 +214,19 @@ public class GText : Text, IPointerClickHandler
             int textIndex = 0;
             int imgIdx = 0;
             int rectIdx = 0;
+            int visibleItemIndex = 0;
             for (int i = 0; i < matches.Count; i++)
             {
                 var match = matches[i];
                 _matchResult.Parse(match, fontSize);
-
+                if(i > 0)//普通字符
+                {
+                    var lastmatch = matches[i - 1];
+                    visibleItemIndex += match.Index - lastmatch.Index - lastmatch.Length;
+                }
+				else
+				{
+					visibleItemIndex += match.Index;
                 switch (_matchResult.type)
                 {
                     case MatchType.Emoji:
@@ -221,7 +235,7 @@ public class GText : Text, IPointerClickHandler
                         if (_emojiData.TryGetValue(_matchResult.title, out info))
                         {
                             _builder.Append(mText.Substring(textIndex, match.Index - textIndex));
-                            int temIndex = _builder.Length;
+                               int temIndex =  _builder.Length;
 
                             _builder.Append("<quad size=");
                             _builder.Append(_matchResult.height);
@@ -229,7 +243,7 @@ public class GText : Text, IPointerClickHandler
                             _builder.Append((_matchResult.width * 1.0f / _matchResult.height).ToString("f2"));
                             _builder.Append(" />");
 
-                            _emojis.Add(temIndex, new EmojiInfo()
+                            _emojis.Add(visibleItemIndex, new EmojiInfo()
                             {
                                 type = MatchType.Emoji,
                                 sprite = info,
@@ -242,8 +256,8 @@ public class GText : Text, IPointerClickHandler
                                 var hrefInfo = new HrefInfo()
                                 {
                                     show = false,
-                                    startIndex = temIndex * 4,
-                                    endIndex = temIndex * 4 + 3,
+                                    startIndex = visibleItemIndex * 4,
+                                    endIndex = visibleItemIndex * 4 + 3,
                                     url = _matchResult.url,
                                     color = _matchResult.GetColor(color)
                                 };
@@ -252,6 +266,7 @@ public class GText : Text, IPointerClickHandler
 
                             textIndex = match.Index + match.Length;
                         }
+                            visibleItemIndex += 1;
                         break;
                     }
                     case MatchType.HyperLink:
@@ -260,12 +275,13 @@ public class GText : Text, IPointerClickHandler
                         _builder.Append("<color=");
                         _builder.Append(_matchResult.GetHexColor(color));
                         _builder.Append(">");
-                            
+                        
                         var href = new HrefInfo();
                         href.show = true;
-                        href.startIndex = _builder.Length * 4;
+                        href.startIndex = visibleItemIndex * 4;
                         _builder.Append(_matchResult.link);
-                        href.endIndex = _builder.Length * 4 - 1;
+                        visibleItemIndex += _matchResult.link.Length;
+                        href.endIndex = (visibleItemIndex + _matchResult.link.Length) * 4 - 1;
                         href.url = _matchResult.url;
                         href.color = _matchResult.GetColor(color);
 
@@ -274,6 +290,7 @@ public class GText : Text, IPointerClickHandler
                         _builder.Append("</color>");
 
                         textIndex = match.Index + match.Length;
+                        
                         break;
                     }
                     case MatchType.CustomFill:
@@ -289,25 +306,26 @@ public class GText : Text, IPointerClickHandler
                         _builder.Append((_matchResult.width * 1.0f / _matchResult.height).ToString("f2"));
                         _builder.Append(" />");
                         
-                        _emojis.Add(temIndex, new EmojiInfo()
+                        _emojis.Add(visibleItemIndex, new EmojiInfo()
                         {
                             type = _matchResult.type,
                             width = _matchResult.width,
                             height = _matchResult.height,
                             texture = new TextureInfo() {link = _matchResult.link, index = _matchResult.type == MatchType.Texture? imgIdx++ : rectIdx++}
                         });
+                           
                         if (_matchResult.hasUrl)
                         {
                             var hrefInfo = new HrefInfo()
                             {
                                 show = false,
-                                startIndex = temIndex * 4,
-                                endIndex = temIndex * 4 + 3,
+                                startIndex = visibleItemIndex * 4,
+                                endIndex = visibleItemIndex * 4 + 3,
                                 url = _matchResult.url,
                                 color = _matchResult.GetColor(color)
                             };
-
-                            _hrefs.Add(hrefInfo);
+                                ++visibleItemIndex;
+                                _hrefs.Add(hrefInfo);
                             //_underlines.Add(hrefInfo);
                         }
                         
@@ -318,6 +336,7 @@ public class GText : Text, IPointerClickHandler
             }
             _builder.Append(mText.Substring(textIndex, mText.Length - textIndex));
             _outputText = _builder.ToString();
+            Debug.Log(_outputText, gameObject);
         }
         else
             _outputText = mText;
@@ -342,6 +361,45 @@ public class GText : Text, IPointerClickHandler
                 };
                 _underlines.Add(underline);
             }
+        }
+    }
+
+    void ComputeBounds2(VertexHelper toFill)
+    {
+
+        UIVertex vert = new UIVertex();
+        // 处理超链接包围框
+        foreach (var hrefInfo in _hrefs)
+        {
+            hrefInfo.boxes.Clear();
+            if (hrefInfo.startIndex >= toFill.currentVertCount)
+            {
+                continue;
+            }
+            // 将超链接里面的文本顶点索引坐标加入到包围框
+            toFill.PopulateUIVertex(ref vert, hrefInfo.startIndex);
+            var pos = vert.position;
+            var bounds = new Bounds(pos, Vector3.zero);
+            for (int i = hrefInfo.startIndex, m = hrefInfo.endIndex; i < m; i++)
+            {
+                if (i >= toFill.currentVertCount)
+                {
+                    break;
+                }
+
+                toFill.PopulateUIVertex(ref vert, i);
+                pos = vert.position;
+                if (pos.x < bounds.min.x) // 换行重新添加包围框
+                {
+                    hrefInfo.boxes.Add(new Rect(bounds.min, bounds.size));
+                    bounds = new Bounds(pos, Vector3.zero);
+                }
+                else
+                {
+                    bounds.Encapsulate(pos); // 扩展包围框
+                }
+            }
+            hrefInfo.boxes.Add(new Rect(bounds.min, bounds.size));
         }
     }
 
@@ -546,7 +604,10 @@ public class GText : Text, IPointerClickHandler
     }
 
     [Serializable]
-    public class HrefClickEvent : UnityEvent<string> { }
+    public class HrefClickEvent : UnityEvent<string> {
+    }
+
+   
 
     class SpriteInfo
     {
