@@ -445,7 +445,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 206, y: 21}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 573, y: 372}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &505091683
@@ -457,10 +457,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 505091681}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b9e2ed8f7d7d21141acaa11c9c47bbe0, type: 3}
+  m_Script: {fileID: 11500000, guid: 4e2c363ad60fdf3478006a0524943151, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 2100000, guid: 61c568036983f274c96dcf923451d6db, type: 2}
+  m_Material: {fileID: 2100000, guid: ce2caad950578c447956f919bb775cb2, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_OnCullStateChanged:
@@ -473,13 +473,13 @@ MonoBehaviour:
     m_BestFit: 0
     m_MinSize: 10
     m_MaxSize: 40
-    m_Alignment: 0
+    m_Alignment: 1
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: '[1]2[AA]3'
+  m_Text: '[0x01##ff0000#ClickLink=show][0x02|30|50##00ffff#ClickImg=Icons/1]ce'
 --- !u!222 &505091684
 CanvasRenderer:
   m_ObjectHideFlags: 0
