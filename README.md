@@ -28,6 +28,11 @@ New GText
 测试<material=u#00ff00>Underline下划线</material>ceshi
 测试[0x03|64=aoman]ceshi自定义加载其他
 ```
+
+### 更新0.6
+textgenerator顶点接口优化适配
+
+
 #### 更新 0.5
 * 1 增加[0x03]自定义加载其他的接口，使用方式如下方解释5
 * 2 改写图片填充、及自定义加载接口
